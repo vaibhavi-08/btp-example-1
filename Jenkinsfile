@@ -1,112 +1,89 @@
 pipeline {
     agent any
 
-    options {
-        timestamps()
-        disableConcurrentBuilds()
+    tools {
+        maven 'maven_3_5_0'
+        jdk 'jdk11'
     }
 
-    environment {
-        MAVEN_OPTS = '-Dmaven.test.failure.ignore=false'
+    options {
+        durabilityHint('PERFORMANCE_OPTIMIZED')
+        timestamps()
+        skipDefaultCheckout(true)
     }
 
     stages {
+
         stage('Checkout') {
             steps {
-                // No submodules or LFS according to JSON, so simple SCM checkout is enough
                 checkout scm
             }
         }
 
         stage('Setup') {
             steps {
-                sh '''
-                    set -e
-
-                    echo "[Setup] Preparing Maven dependency cache..."
-
-                    # Pre-fetch dependencies to speed up later Maven runs
-                    mvn -B dependency:go-offline || mvn -B dependency:resolve
-
-                    echo "[Setup] Maven dependency setup complete."
-                '''
+                withMaven(maven: 'maven_3_5_0') {
+                    sh 'mvn -B clean compile'
+                }
             }
         }
 
         stage('Build') {
             steps {
-                sh '''
-                    set -e
-
-                    echo "[Build] Cleaning and packaging application (skipping tests for speed)..."
-                    mvn -B -DskipTests clean package
-
-                    echo "[Build] Build artifacts available under target/ (e.g., target/*.jar)."
-                '''
+                withMaven(maven: 'maven_3_5_0') {
+                    // Using -DskipTests saves time here
+                    sh 'mvn -B -DskipTests deploy'
+                }
             }
         }
 
         stage('Test') {
-            steps {
-                sh '''
-                    set -e
-
-                    echo "[Test] Running JUnit tests via Maven..."
-                    mvn -B test
-
-                    echo "[Test] Test phase complete."
-                '''
+            parallel {
+                stage('Unit Tests') {
+                    steps {
+                        withMaven(maven: 'maven_3_5_0') {
+                            sh 'mvn -B test'
+                        }
+                    }
+                }
+                stage('Integration Tests') {
+                    steps {
+                        withMaven(maven: 'maven_3_5_0') {
+                            // verify runs integration tests if configured
+                            sh 'mvn -B verify -DskipUnitTests'
+                        }
+                    }
+                }
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                }
             }
         }
 
         stage('Quality') {
             steps {
-                sh '''
-                    set +e
-
-                    echo "[Quality] No static analysis or security tools configured in this repo."
-                    echo "[Quality] Hint: Consider adding SpotBugs, Checkstyle, or other static analysis tools"
-                    echo "[Quality]       to improve code quality and catch vulnerabilities earlier."
-
-                    # If in future you add tools, you can plug them here, e.g.:
-                    # mvn -B spotbugs:check
-                    # mvn -B checkstyle:check
-
-                    exit 0
-                '''
-            }
-        }
-
-        stage('Package') {
-            steps {
-                sh '''
-                    set -e
-
-                    echo "[Package] Collecting JAR artifacts from target/..."
-                    ls -1 target/*.jar || echo "[Package] No JAR files found in target/."
-
-                    echo "[Package] Archiving JARs as build artifacts..."
-                '''
-                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-            }
-        }
-
-        stage('Deploy') {
-            when {
-                expression {
-                    // No deployment config in JSON; keep deploy manual and only on main/master
-                    return env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master'
+                // Minimal dependency vulnerability scan
+                withMaven(maven: 'maven_3_5_0') {
+                    // OWASP Dependency Check (light version)
+                    sh 'mvn -B org.owasp:dependency-check-maven:check -DskipTests'
                 }
             }
-            steps {
-                script {
-                    input message: "No deployment configuration detected. Proceed with manual deploy step?", ok: "Continue"
+            post {
+                always {
+                    archiveArtifacts artifacts: '**/dependency-check-report.html', fingerprint: true
                 }
-                sh '''
-                    echo "[Deploy] No automated deployment target configured for this project."
-                    echo "[Deploy] You can implement deployment here (e.g., kubectl apply, scp, etc.)."
-                '''
             }
+        }
+    }
+
+    post {
+        failure {
+            echo "Pipeline failed 😢"
+        }
+        success {
+            echo "✔ Pipeline executed successfully! 🎉"
         }
     }
 }
