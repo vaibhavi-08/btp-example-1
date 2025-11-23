@@ -17,7 +17,7 @@ pipeline {
 
         stage('Setup') {
             steps {
-                withMaven(maven: 'maven 3.8.7') {
+                withMaven(maven: 'Maven 3.8.7') {
                     sh 'mvn clean compile'
                 }
             }
@@ -25,7 +25,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                withMaven(maven: 'maven 3.8.7') {
+                withMaven(maven: 'Maven 3.8.7') {
                     sh 'mvn clean package'
                 }
             }
@@ -37,7 +37,7 @@ pipeline {
 
                 stage('Test') {
                     steps {
-                        withMaven(maven: 'maven 3.8.7') {
+                        withMaven(maven: 'Maven 3.8.7') {
                             sh 'mvn test'
                         }
                     }
