@@ -1,0 +1,58 @@
+{
+  "checkout": {
+    "description": "Checkout source code from repository",
+    "commands": [
+      "git checkout SCM"
+    ]
+  },
+  "setup": {
+    "description": "Setup Maven and dependencies",
+    "commands": [
+      "mvn dependency:resolve"
+    ],
+    "tools": [
+      "maven",
+      "jdk"
+    ]
+  },
+  "build": {
+    "description": "Compile and package application",
+    "commands": [
+      "mvn clean compile",
+      "mvn package -DskipTests"
+    ],
+    "artifacts": [
+      "target/*.jar"
+    ],
+    "dependencies": [
+      "mvn dependency:analyze",
+      "mvn dependency:tree"
+    ]
+  },
+  "test": {
+    "description": "Execute test suites",
+    "commands": [
+      "mvn test",
+      "mvn verify -DskipUnitTests"
+    ],
+    "junit_results": "target/surefire-reports/*.xml",
+    "coverage_report": "target/site/jacoco/jacoco.xml"
+  },
+  "quality": {
+    "description": "Quality gates and security scanning",
+    "commands": [
+      "mvn checkstyle:check",
+      "mvn pmd:check",
+      "mvn dependency-check-maven:check -DskipTests"
+    ],
+    "tools": [
+      "checkstyle",
+      "pmd",
+      "dependency-check-maven"
+    ],
+    "reports": [
+      "target/site/checkstyle/checkstyle.xml",
+      "target/site/pmd/pmd.xml"
+    ]
+  }
+}
