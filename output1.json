@@ -1,59 +1,48 @@
 {
   "checkout": {
-    "description": "Checkout source code from repository",
+    "description": "Checkout source code",
     "commands": [
       "git checkout SCM"
     ]
   },
   "setup": {
-    "description": "Install dependencies and setup environment",
+    "description": "Setup Maven and dependencies",
     "commands": [
-      "mvn dependency:resolve -B"
-    ],
-    "tools": [
-      "maven"
-    ],
-    "environment": {
-      "MAVEN_OPTS": "-Duser.home=${WORKSPACE}/.m2"
-    }
-  },
-  "build": {
-    "description": "Compile code and build artifacts",
-    "commands": [
-      "mvn clean compile -B",
-      "mvn package -DskipTests -B",
-      "mvn dependency:analyze -B",
-      "mvn dependency:tree -B"
+      "mvn dependency:resolve"
     ],
     "tools": [
       "maven",
       "jdk"
     ]
   },
-  "test": {
-    "description": "Run unit tests and integration tests",
+  "build": {
+    "description": "Compile and package application",
     "commands": [
-      "mvn test -B",
-      "mvn verify -DskipUnitTests -B"
+      "mvn clean compile",
+      "mvn package -DskipTests"
+    ]
+  },
+  "test": {
+    "description": "Execute test suites",
+    "commands": [
+      "mvn test",
+      "mvn verify"
     ],
     "tools": [
-      "junit",
-      "jacoco"
-    ],
-    "environment": {}
+      "junit"
+    ]
   },
   "quality": {
-    "description": "Code quality checks, security scans, and dependency vulnerability scanning",
+    "description": "Quality gates and security scanning",
     "commands": [
-      "mvn checkstyle:check -B",
-      "mvn pmd:check -B",
-      "mvn dependency-check-maven:check -DskipTests -B"
+      "mvn checkstyle:check",
+      "mvn pmd:check",
+      "mvn dependency-check:check"
     ],
     "tools": [
       "checkstyle",
       "pmd",
-      "dependency-check-maven"
-    ],
-    "environment": {}
+      "dependency-check"
+    ]
   }
 }

@@ -1,14 +1,15 @@
 pipeline {
     agent any
 
-    environment {
-        MAVEN_OPTS = "-Duser.home=${WORKSPACE}/.m2"
-    }
-
     options {
         skipDefaultCheckout true
         timestamps()
         durabilityHint('PERFORMANCE_OPTIMIZED')
+    }
+
+    tools {
+        maven 'Maven 3.8.7'    // From JSON "tools" (setup + build)
+        jdk 'JDK 11'       // From JSON "tools" (setup + build)
     }
 
     stages {
@@ -16,28 +17,20 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+                sh 'git checkout SCM'
             }
         }
 
         stage('Setup') {
             steps {
-                sh 'mvn dependency:resolve -B'
+                sh 'mvn dependency:resolve'
             }
         }
 
         stage('Build') {
             steps {
-                sh '''
-                    mvn clean compile -B
-                    mvn package -DskipTests -B
-                    mvn dependency:analyze -B
-                    mvn dependency:tree -B
-                '''
-            }
-            post {
-                success {
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                }
+                sh 'mvn clean compile'
+                sh 'mvn package -DskipTests'
             }
         }
 
@@ -47,32 +40,16 @@ pipeline {
 
                 stage('Test') {
                     steps {
-                        sh '''
-                            mvn test -B
-                            mvn verify -DskipUnitTests -B
-                        '''
-                    }
-                    post {
-                        always {
-                            junit 'target/surefire-reports/*.xml'
-                            archiveArtifacts artifacts: 'target/site/jacoco/jacoco.xml'
-                        }
+                        sh 'mvn test'
+                        sh 'mvn verify'
                     }
                 }
 
                 stage('Quality') {
                     steps {
-                        sh '''
-                            mvn checkstyle:check -B
-                            mvn pmd:check -B
-                            mvn dependency-check-maven:check -DskipTests -B
-                        '''
-                    }
-                    post {
-                        always {
-                            archiveArtifacts artifacts: 'target/site/checkstyle/checkstyle.xml'
-                            archiveArtifacts artifacts: 'target/site/pmd/pmd.xml'
-                        }
+                        sh 'mvn checkstyle:check'
+                        sh 'mvn pmd:check'
+                        sh 'mvn dependency-check:check'
                     }
                 }
             }
@@ -81,7 +58,7 @@ pipeline {
 
     post {
         always {
-            cleanWs() // Complete cleanup to avoid cache bloat
+            cleanWs()
         }
     }
 }
