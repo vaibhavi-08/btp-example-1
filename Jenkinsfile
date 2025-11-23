@@ -1,9 +1,9 @@
 pipeline {
     agent any
 
-   tools {
-        maven 'Maven 3.8.7'  // must match Jenkins UI name
-        jdk 'JDK 11'        // must match Jenkins UI name
+    tools {
+        maven 'Maven 3.8.7'
+        jdk 'JDK 11'
     }
 
     options {
@@ -22,7 +22,7 @@ pipeline {
 
         stage('Setup') {
             steps {
-                withMaven(maven: 'maven_3_5_0') {
+                withMaven(maven: 'Maven 3.8.7') {
                     sh 'mvn -B clean compile'
                 }
             }
@@ -30,8 +30,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                withMaven(maven: 'maven_3_5_0') {
-                    // Using -DskipTests saves time here
+                withMaven(maven: 'Maven 3.8.7') {
                     sh 'mvn -B -DskipTests deploy'
                 }
             }
@@ -41,15 +40,14 @@ pipeline {
             parallel {
                 stage('Unit Tests') {
                     steps {
-                        withMaven(maven: 'maven_3_5_0') {
+                        withMaven(maven: 'Maven 3.8.7') {
                             sh 'mvn -B test'
                         }
                     }
                 }
                 stage('Integration Tests') {
                     steps {
-                        withMaven(maven: 'maven_3_5_0') {
-                            // verify runs integration tests if configured
+                        withMaven(maven: 'Maven 3.8.7') {
                             sh 'mvn -B verify -DskipUnitTests'
                         }
                     }
@@ -64,9 +62,7 @@ pipeline {
 
         stage('Quality') {
             steps {
-                // Minimal dependency vulnerability scan
-                withMaven(maven: 'maven_3_5_0') {
-                    // OWASP Dependency Check (light version)
+                withMaven(maven: 'Maven 3.8.7') {
                     sh 'mvn -B org.owasp:dependency-check-maven:check -DskipTests'
                 }
             }
