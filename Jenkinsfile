@@ -6,7 +6,7 @@ pipeline {
     }
 
     options {
-        skipDefaultCheckout true   // We will do manual checkout
+        skipDefaultCheckout true
         timestamps()
         durabilityHint('PERFORMANCE_OPTIMIZED')
     }
@@ -41,7 +41,7 @@ pipeline {
             }
         }
 
-        stage('Test & Quality in Parallel') {
+        stage('Test & Quality') {
             failFast true
             parallel {
 
@@ -81,7 +81,7 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            cleanWs() // Complete cleanup to avoid cache bloat
         }
     }
 }
