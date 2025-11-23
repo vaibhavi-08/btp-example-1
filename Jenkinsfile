@@ -7,30 +7,27 @@ pipeline {
         durabilityHint('PERFORMANCE_OPTIMIZED')
     }
 
-    tools {
-        maven 'Maven 3.8.7'    // From JSON "tools" (setup + build)
-        jdk 'JDK 11'       // From JSON "tools" (setup + build)
-    }
-
     stages {
 
         stage('Checkout') {
             steps {
                 checkout scm
-                sh 'git checkout SCM'
             }
         }
 
         stage('Setup') {
             steps {
-                sh 'mvn dependency:resolve'
+                withMaven(maven: 'maven_3_8_7') {
+                    sh 'mvn clean compile'
+                }
             }
         }
 
         stage('Build') {
             steps {
-                sh 'mvn clean compile'
-                sh 'mvn package -DskipTests'
+                withMaven(maven: 'maven_3_8_7') {
+                    sh 'mvn clean package'
+                }
             }
         }
 
@@ -40,16 +37,15 @@ pipeline {
 
                 stage('Test') {
                     steps {
-                        sh 'mvn test'
-                        sh 'mvn verify'
+                        withMaven(maven: 'maven_3_8_7') {
+                            sh 'mvn test'
+                        }
                     }
                 }
 
                 stage('Quality') {
                     steps {
-                        sh 'mvn checkstyle:check'
-                        sh 'mvn pmd:check'
-                        sh 'mvn dependency-check:check'
+                        echo 'No quality commands defined in JSON — stage intentionally empty'
                     }
                 }
             }

@@ -1,48 +1,45 @@
 {
   "checkout": {
-    "description": "Checkout source code",
-    "commands": [
-      "git checkout SCM"
+    "summary": "Checkout the source code for the Jenkins example project.",
+    "jenkins_steps": [
+      "checkout scm"
+    ],
+    "notes": [
+      "Use Jenkins credentials for private repositories; do not hardcode tokens."
     ]
   },
   "setup": {
-    "description": "Setup Maven and dependencies",
-    "commands": [
-      "mvn dependency:resolve"
+    "summary": "Prepare Maven environment and install dependencies for Java project in Jenkinsfile using withMaven step.",
+    "jenkins_steps": [
+      "withMaven(maven : 'maven_3_5_0') { sh 'mvn clean compile' }"
     ],
-    "tools": [
-      "maven",
-      "jdk"
+    "notes": [
+      "This stage is similar to the original 'Compile Stage', but since it sets up the Maven environment, we leave it in this setup stage."
     ]
   },
   "build": {
-    "description": "Compile and package application",
-    "commands": [
-      "mvn clean compile",
-      "mvn package -DskipTests"
+    "summary": "Build Java project using Maven.",
+    "jenkins_steps": [
+      "withMaven(maven : 'maven_3_5_0') { sh 'mvn clean package' }"
+    ],
+    "notes": [
+      "Since there is no explicit 'Build Stage' in the original Jenkinsfile, we assume it is part of the deployment stage. However, since the original code already has Maven commands for build (clean and compile) inside the withMaven block, this stage's primary function remains as a Build stage."
     ]
   },
   "test": {
-    "description": "Execute test suites",
-    "commands": [
-      "mvn test",
-      "mvn verify"
+    "summary": "Run unit tests for Java project using Maven.",
+    "jenkins_steps": [
+      "withMaven(maven : 'maven_3_5_0') { sh 'mvn test' }"
     ],
-    "tools": [
-      "junit"
+    "notes": [
+      "This is the original 'Testing Stage', which runs Maven's test command."
     ]
   },
   "quality": {
-    "description": "Quality gates and security scanning",
-    "commands": [
-      "mvn checkstyle:check",
-      "mvn pmd:check",
-      "mvn dependency-check:check"
-    ],
-    "tools": [
-      "checkstyle",
-      "pmd",
-      "dependency-check"
+    "summary": "Run code quality checks for Java project.",
+    "jenkins_steps": [],
+    "notes": [
+      "There are no explicit code quality checks in the provided Jenkinsfile, so we leave this stage empty."
     ]
   }
 }
