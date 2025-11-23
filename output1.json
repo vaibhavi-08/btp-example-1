@@ -6,53 +6,54 @@
     ]
   },
   "setup": {
-    "description": "Setup Maven and dependencies",
+    "description": "Install dependencies and setup environment",
     "commands": [
-      "mvn dependency:resolve"
+      "mvn dependency:resolve -B"
+    ],
+    "tools": [
+      "maven"
+    ],
+    "environment": {
+      "MAVEN_OPTS": "-Duser.home=${WORKSPACE}/.m2"
+    }
+  },
+  "build": {
+    "description": "Compile code and build artifacts",
+    "commands": [
+      "mvn clean compile -B",
+      "mvn package -DskipTests -B",
+      "mvn dependency:analyze -B",
+      "mvn dependency:tree -B"
     ],
     "tools": [
       "maven",
       "jdk"
     ]
   },
-  "build": {
-    "description": "Compile and package application",
-    "commands": [
-      "mvn clean compile",
-      "mvn package -DskipTests"
-    ],
-    "artifacts": [
-      "target/*.jar"
-    ],
-    "dependencies": [
-      "mvn dependency:analyze",
-      "mvn dependency:tree"
-    ]
-  },
   "test": {
-    "description": "Execute test suites",
+    "description": "Run unit tests and integration tests",
     "commands": [
-      "mvn test",
-      "mvn verify -DskipUnitTests"
+      "mvn test -B",
+      "mvn verify -DskipUnitTests -B"
     ],
-    "junit_results": "target/surefire-reports/*.xml",
-    "coverage_report": "target/site/jacoco/jacoco.xml"
+    "tools": [
+      "junit",
+      "jacoco"
+    ],
+    "environment": {}
   },
   "quality": {
-    "description": "Quality gates and security scanning",
+    "description": "Code quality checks, security scans, and dependency vulnerability scanning",
     "commands": [
-      "mvn checkstyle:check",
-      "mvn pmd:check",
-      "mvn dependency-check-maven:check -DskipTests"
+      "mvn checkstyle:check -B",
+      "mvn pmd:check -B",
+      "mvn dependency-check-maven:check -DskipTests -B"
     ],
     "tools": [
       "checkstyle",
       "pmd",
       "dependency-check-maven"
     ],
-    "reports": [
-      "target/site/checkstyle/checkstyle.xml",
-      "target/site/pmd/pmd.xml"
-    ]
+    "environment": {}
   }
 }
