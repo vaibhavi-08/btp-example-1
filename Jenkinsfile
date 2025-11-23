@@ -1,15 +1,14 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven 3.8.7'
-        jdk 'JDK 11'
+    environment {
+        MAVEN_OPTS = "-Duser.home=${WORKSPACE}/.m2"
     }
 
     options {
-        durabilityHint('PERFORMANCE_OPTIMIZED')
+        skipDefaultCheckout true   // We will do manual checkout
         timestamps()
-        skipDefaultCheckout(true)
+        durabilityHint('PERFORMANCE_OPTIMIZED')
     }
 
     stages {
@@ -22,64 +21,67 @@ pipeline {
 
         stage('Setup') {
             steps {
-                withMaven(maven: 'Maven 3.8.7') {
-                    sh 'mvn -B clean compile'
-                }
+                sh 'mvn dependency:resolve -B'
             }
         }
 
         stage('Build') {
             steps {
-                withMaven(maven: 'Maven 3.8.7') {
-                    sh 'mvn -B -DskipTests deploy'
+                sh '''
+                    mvn clean compile -B
+                    mvn package -DskipTests -B
+                    mvn dependency:analyze -B
+                    mvn dependency:tree -B
+                '''
+            }
+            post {
+                success {
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
                 }
             }
         }
 
-        stage('Test') {
+        stage('Test & Quality in Parallel') {
+            failFast true
             parallel {
-                stage('Unit Tests') {
-                    steps {
-                        withMaven(maven: 'Maven 3.8.7') {
-                            sh 'mvn -B test'
-                        }
-                    }
-                }
-                stage('Integration Tests') {
-                    steps {
-                        withMaven(maven: 'Maven 3.8.7') {
-                            sh 'mvn -B verify -DskipUnitTests'
-                        }
-                    }
-                }
-            }
-            post {
-                always {
-                    junit '**/target/surefire-reports/*.xml'
-                }
-            }
-        }
 
-        stage('Quality') {
-            steps {
-                withMaven(maven: 'Maven 3.8.7') {
-                    sh 'mvn -B org.owasp:dependency-check-maven:check -DskipTests'
+                stage('Test') {
+                    steps {
+                        sh '''
+                            mvn test -B
+                            mvn verify -DskipUnitTests -B
+                        '''
+                    }
+                    post {
+                        always {
+                            junit 'target/surefire-reports/*.xml'
+                            archiveArtifacts artifacts: 'target/site/jacoco/jacoco.xml'
+                        }
+                    }
                 }
-            }
-            post {
-                always {
-                    archiveArtifacts artifacts: '**/dependency-check-report.html', fingerprint: true
+
+                stage('Quality') {
+                    steps {
+                        sh '''
+                            mvn checkstyle:check -B
+                            mvn pmd:check -B
+                            mvn dependency-check-maven:check -DskipTests -B
+                        '''
+                    }
+                    post {
+                        always {
+                            archiveArtifacts artifacts: 'target/site/checkstyle/checkstyle.xml'
+                            archiveArtifacts artifacts: 'target/site/pmd/pmd.xml'
+                        }
+                    }
                 }
             }
         }
     }
 
     post {
-        failure {
-            echo "Pipeline failed 😢"
-        }
-        success {
-            echo "✔ Pipeline executed successfully! 🎉"
+        always {
+            cleanWs()
         }
     }
 }
