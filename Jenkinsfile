@@ -1,5 +1,5 @@
 pipeline {
-    agent none
+    agent any
     environment {
         REGISTRY_CREDS   = 'dockerhub-credentials'
         DEPLOY_SSH_CREDS = 'deploy-server-ssh'
